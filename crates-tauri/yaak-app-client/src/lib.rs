@@ -67,6 +67,7 @@ mod commands;
 mod encoding;
 mod error;
 mod git_ext;
+mod git_watcher;
 mod grpc;
 mod history;
 mod http_request;
@@ -1831,8 +1832,13 @@ pub fn run() {
             git_ext::cmd_git_delete_remote_branch,
             git_ext::cmd_git_merge_branch,
             git_ext::cmd_git_rename_branch,
+            git_ext::cmd_git_branch_info,
             git_ext::cmd_git_status,
+            git_ext::cmd_git_worktree_status,
+            git_ext::cmd_git_watch_worktree_status,
             git_ext::cmd_git_log,
+            git_ext::cmd_git_log_for_file,
+            git_ext::cmd_git_file_diff_for_commit,
             git_ext::cmd_git_initialize,
             git_ext::cmd_git_clone,
             git_ext::cmd_git_commit,
@@ -1844,6 +1850,8 @@ pub fn run() {
             git_ext::cmd_git_add,
             git_ext::cmd_git_unstage,
             git_ext::cmd_git_reset_changes,
+            git_ext::cmd_git_restore_files,
+            git_ext::cmd_git_restore_file_from_commit,
             git_ext::cmd_git_add_credential,
             git_ext::cmd_git_remotes,
             git_ext::cmd_git_add_remote,
