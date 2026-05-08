@@ -1,4 +1,4 @@
-import { debounce } from "@yaakapp-internal/lib";
+import { debounce, eagerDebounceAsync } from "@yaakapp-internal/lib";
 import type { AnyModel, ModelPayload } from "@yaakapp-internal/models";
 import { watchWorkspaceFiles } from "@yaakapp-internal/sync";
 import { syncWorkspace } from "../commands/commands";
@@ -25,41 +25,8 @@ export async function sync({ force }: { force?: boolean } = {}) {
   });
 }
 
-const debouncedSync = debounce(async () => {
-  await sync();
-}, 1000);
-
-let modelSyncTimer: ReturnType<typeof setTimeout> | null = null;
-let modelSyncInFlight = false;
-
-function scheduleModelSync() {
-  if (modelSyncTimer == null) {
-    // No timer means this is the first model change in a burst, so sync immediately.
-    void syncModelChanges();
-  } else {
-    // Keep pushing the trailing sync out until model writes have been quiet for a bit.
-    clearTimeout(modelSyncTimer);
-  }
-
-  modelSyncTimer = setTimeout(async () => {
-    modelSyncTimer = null;
-    // Catch any final state that was written while the immediate sync was running.
-    await syncModelChanges();
-  }, 1000);
-}
-
-async function syncModelChanges() {
-  if (modelSyncInFlight) return;
-
-  modelSyncInFlight = true;
-  try {
-    await sync();
-  } catch (e) {
-    console.error(e);
-  } finally {
-    modelSyncInFlight = false;
-  }
-}
+const syncAfterFileChange = debounce(sync, 1000);
+const syncAfterModelWrite = eagerDebounceAsync(sync, 1000);
 
 /**
  * Subscribe to model change events. Since we check the workspace ID on sync, we can
@@ -67,7 +34,7 @@ async function syncModelChanges() {
  */
 function initModelListeners() {
   listenToTauriEvent<ModelPayload>("model_write", (p) => {
-    if (isModelRelevant(p.payload.model)) scheduleModelSync();
+    if (isModelRelevant(p.payload.model)) syncAfterModelWrite();
   });
 }
 
@@ -82,11 +49,11 @@ function initFileChangeListeners() {
     await unsub?.(); // Unsub to previous
     const workspaceMeta = jotaiStore.get(activeWorkspaceMetaAtom);
     if (workspaceMeta == null || workspaceMeta.settingSyncDir == null) return;
-    debouncedSync(); // Perform an initial sync when switching workspace
+    syncAfterFileChange(); // Perform an initial sync when switching workspace
     unsub = watchWorkspaceFiles(
       workspaceMeta.workspaceId,
       workspaceMeta.settingSyncDir,
-      debouncedSync,
+      syncAfterFileChange,
     );
   });
 }
