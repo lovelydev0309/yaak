@@ -122,9 +122,7 @@ fn setup_window_menu<R: Runtime>(win: &WebviewWindow<R>) -> Result<()> {
             }
 
             // Commands for development
-            "dev.reset_size" => webview_window
-                .set_size(LogicalSize::new(1100.0, 600.0))
-                .unwrap(),
+            "dev.reset_size" => webview_window.set_size(LogicalSize::new(1100.0, 600.0)).unwrap(),
             "dev.reset_size_16x9" => {
                 let width = webview_window.outer_size().unwrap().width;
                 let height = width * 9 / 16;
@@ -1507,7 +1505,6 @@ async fn cmd_reload_plugins<R: Runtime>(
     Ok(errors)
 }
 
-
 #[tauri::command]
 async fn cmd_plugin_info<R: Runtime>(
     id: &str,
@@ -1580,7 +1577,14 @@ async fn cmd_new_child_window(
     inner_size: (f64, f64),
 ) -> YaakResult<()> {
     let use_native_titlebar = parent_window.app_handle().db().get_settings().use_native_titlebar;
-    let win = yaak_window::window::create_child_window(&parent_window, url, label, title, inner_size, use_native_titlebar)?;
+    let win = yaak_window::window::create_child_window(
+        &parent_window,
+        url,
+        label,
+        title,
+        inner_size,
+        use_native_titlebar,
+    )?;
     setup_window_menu(&win)?;
     Ok(())
 }
@@ -1878,7 +1882,11 @@ pub fn run() {
             match event {
                 RunEvent::Ready => {
                     let use_native_titlebar = app_handle.db().get_settings().use_native_titlebar;
-                    if let Ok(win) = yaak_window::window::create_main_window(app_handle, "/", use_native_titlebar) {
+                    if let Ok(win) = yaak_window::window::create_main_window(
+                        app_handle,
+                        "/",
+                        use_native_titlebar,
+                    ) {
                         let _ = setup_window_menu(&win);
                     }
                     let h = app_handle.clone();
